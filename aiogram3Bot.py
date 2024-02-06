@@ -43,7 +43,7 @@ from datetime import datetime, timedelta
 
 TELEGRAM_TOKEN = "6390700887:AAHoGnCMsJ9AkK51rmJrxsOalBl-LHiZtCY"
 # группа с учениками
-GROUP_ID = '-1001674247269'
+# GROUP_ID = '-1001674247269' # message.chat.id
 # группа только для учителя, для тестов
 # https://t.me/+zF_bqNvChnI5M2Ni
 # GROUP_ID = "-4071547289"
@@ -153,8 +153,7 @@ async def cmd_ban(message: types.Message):
     ### проверка кем является пользователь, который отправил команду, админом
     # получаем статус
     user_status = await bot.get_chat_member(
-        chat_id=message.chat.id, 
-        user_id=message.from_user.id
+        chat_id=message.chat.id, user_id=message.from_user.id
     )
     if isinstance(
         user_status, types.chat_member_administrator.ChatMemberAdministrator
@@ -167,34 +166,33 @@ async def cmd_ban(message: types.Message):
     if not message.reply_to_message:
         await message.reply("Эта комада должна быть ответом на сообщение!")
         return
-    
+
     # запоминаем кого банить будем
     who_banned = message.reply_to_message.from_user.first_name
-    # удаляем мсдж который мы цитировали командой /ban 
+    # удаляем мсдж который мы цитировали командой /ban
     await bot.delete_message(
-        chat_id=GROUP_ID, 
-        message_id=message.reply_to_message.message_id
-        )
+        chat_id=message.chat.id, message_id=message.reply_to_message.message_id
+    )
     # БАНИМ пользователя
     await bot.ban_chat_member(
-        chat_id=GROUP_ID,
+        chat_id=message.chat.id,
         user_id=message.reply_to_message.from_user.id,
         revoke_messages=True,
     )
 
     # репортим в чат что юзер забанен
-    # await message.reply_to_message.reply (f'Пользователь <b>{who_banned} </b> забанен', parse_mode='html')
-    await message.answer(f'Пользователь <b>{who_banned} </b> забанен', parse_mode='html')
+    await message.answer(
+        f"Пользователь <b>{who_banned} </b> забанен", parse_mode="html"
+    )
 
 
-
-### мутируем
+""" ### мутируем
 # https://qna.habr.com/q/1146740 тут есть отличный код в коментах
 @dp.message(Command("mute"))
 async def cmd_mute(message: types.Message):
     ### проверка кем является пользователь, который отправил команду
     # получаем статус
-    user_status = await bot.get_chat_member(chat_id=GROUP_ID, user_id=message.from_user.id)
+    user_status = await bot.get_chat_member(chat_id=message.chat.id, user_id=message.from_user.id)
     if not isinstance(user_status, types.chat_member_administrator.ChatMemberAdministrator ) or not isinstance(user_status, types.chat_member_owner.ChatMemberOwner):
     # if isinstance(user_status, ChatMemberAdministrator) or isinstance(user_status, ChatMemberOwner):
         await message.reply('у вас нет прав на совершение данного действия. \n Рейтинг понижен')
@@ -206,7 +204,7 @@ async def cmd_mute(message: types.Message):
         return
     # рабочее мутирование юзера
     await message.bot.restrict_chat_member(
-        chat_id=GROUP_ID,
+        chat_id=message.chat.id,
         user_id=message.reply_to_message.from_user.id,
         permissions=ChatPermissions(can_send_messages=False),
     )
@@ -216,32 +214,77 @@ async def cmd_mute(message: types.Message):
     # # if isinstance(user_status, ChatMemberAdministrator) or isinstance(user_status, ChatMemberOwner):
     #     print(f'\n Админ или хозяин \n')
 
-    # until_date=datetime.now() + timedelta(рщгкы = 2 * 24))
+    # until_date=datetime.now() + timedelta(hours = 2 * 24))
     # end_restr = message.date + timedelta(seconds = 2 * 24))
     # 2 * 86400
 
     await message.reply_to_message.reply("Пользователь ззамутирован")
     # await message.reply_to_message.reply('Пользователь {user} ззамутирован на {ковырнадцать} {днейЧасов}')
+"""
 
 
-# действия
-# 0.1 исправить parse mode
-#  ``` bot = Bot(token="123:abcxyz", parse_mode="HTML")``` `
+# https://qna.habr.com/q/1146740
+@dp.message(Command(commands=["m", "mute"]))
+async def mute(message: types.Message):
+    if not message.reply_to_message:
+        await message.reply("Эта команда должна быть ответом на сообщение!")
+        return
+    try:
+        muteint = int(message.text.split()[1])
+        mutetype = message.text.split()[2]
+        comment = " ".join(message.text.split()[3:])
+    except IndexError:
+        await message.reply("Не хватает аргументов!\nПример:\n`/m 3 дня причина`")
+        return
+    if (
+        mutetype == "ч"
+        or mutetype == "часов"
+        or mutetype == "час"
+        or mutetype == "часа"
+    ):
+        dt = datetime.now() + timedelta(hours=muteint)
+        timestamp = dt.timestamp()
+    elif (
+        mutetype == "д" or mutetype == "дней" or mutetype == "день" or mutetype == "дня"
+    ):
+        dt = datetime.now() + timedelta(days=muteint)
+        timestamp = dt.timestamp()
+    elif (
+        mutetype == "м"
+        or mutetype == "мес"
+        or mutetype == "месяц"
+        or mutetype == "месяца"
+        or mutetype == "месяцев"
+    ):
+        if muteint > 12:
+            muteint = 12
+        dt = datetime.now() + timedelta(days=muteint*30)
+        timestamp = dt.timestamp()
+        print('\n\ntimestamp\n')
+        print(timestamp)
+    else:
+        await message.reply("не понял тебя")
+        await bot.delete_message(
+            chat_id=message.chat.id, message_id=message.reply_to_message.message_id - 2
+        )
+        await bot.delete_message(
+            chat_id=message.chat.id, message_id=message.reply_to_message.message_id - 1
+        )
+        return
 
-# 1.1 написать мут.
-# 1.2 САМОСТ сделать, чтобы было несколько разных команд: mt, m, res
+    await message.bot.restrict_chat_member(
+        chat_id=message.chat.id,
+        user_id=message.reply_to_message.from_user.id,
+        permissions=ChatPermissions(can_send_messages=False),
+        until_date=timestamp,
+    )
 
-# 2.1 посмотреть в пример aiogram3 restrict_chat_member, разобраться с until_date
-# 2.2 разобраться с классом времени в отдельном файле
 
-# 3.1 доавить мутирование по времени простое с minutes = 58
-# 3.2 заменить datetime.now() на  message.date, предварительно вывев его в печать print(f'\n\n из обьекта message.date = {message.date} \n\n')
-# 3.3 доавить мутирование по времени простое, с seconds = дней * 86400
+    await message.reply(
+        f' <a href="tg://user?id={message.reply_to_message.from_user.id}">{message.reply_to_message.from_user.first_name}</a>, для Вас уютное место в партере на {muteint} {mutetype}\n {comment}',
+        parse_mode="html",
+    )
 
-# 4 разбить команду мутирование на несколько команд /mt h-25, d-3, m-4 ,
-# делать все черещ часы
-# 5 добавить логику обработки args команды, обьяснить как хотим, попросить чтобы сделали сами
-# 6 сделать чтобы шел вывод username пользователя, который замутирован, а так же на сколько по времени он замутирован
 
 
 """ добавление инлайн кнопок c увеличением, уменьшением
@@ -297,7 +340,8 @@ async def callbacks_num(callback: types.CallbackQuery):
 async def echo(message: types.Message):
     # await message.answer(message.text)
     # print(f"message.reply_to_message.from_user = {message.reply_to_message.from_user}")
-    print(f"message.reply_to_message = {message.reply_to_message}")
+   
+   # print(f"message.reply_to_message = {message.reply_to_message}")
 
 
 # поллинг новых апдейтов
