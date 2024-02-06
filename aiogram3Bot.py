@@ -231,7 +231,7 @@ async def mute(message: types.Message):
         await message.reply(f' {message.from_user.username} утебя есть права')
     else:
         await message.reply(f' {message.from_user.username} у тебя нет прав что бы мутировать') 
-
+        return
     if not message.reply_to_message:
         await message.reply("Эта команда должна быть ответом на сообщение!")
         return
