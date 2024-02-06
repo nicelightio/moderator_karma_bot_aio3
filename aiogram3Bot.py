@@ -226,6 +226,12 @@ async def cmd_mute(message: types.Message):
 # https://qna.habr.com/q/1146740
 @dp.message(Command(commands=["m", "mute"]))
 async def mute(message: types.Message):
+    user_status = await bot.get_chat_member(chat_id=message.chat.id, user_id=message.from_user.id)
+    if isinstance(user_status,types.chat_member_owner.ChatMemberOwner) or isinstance(user_status,types.chat_member_administrator.ChatMemberAdministrator):
+        await message.reply(f' {message.from_user.username} утебя есть права')
+    else:
+        await message.reply(f' {message.from_user.username} у тебя нет прав что бы мутировать') 
+
     if not message.reply_to_message:
         await message.reply("Эта команда должна быть ответом на сообщение!")
         return
