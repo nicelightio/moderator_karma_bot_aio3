@@ -340,7 +340,8 @@ async def callbacks_num(callback: types.CallbackQuery):
 async def echo(message: types.Message):
     # await message.answer(message.text)
     # print(f"message.reply_to_message.from_user = {message.reply_to_message.from_user}")
-   
+    pirnt(' got msg ')
+
    # print(f"message.reply_to_message = {message.reply_to_message}")
 
 
